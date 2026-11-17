@@ -1,5 +1,6 @@
 import Foundation
 @testable import Macterm
+import notify
 import Testing
 
 @MainActor
@@ -153,6 +154,60 @@ struct RemoteHostsTests {
             // The leaf blurs and dims it, as a mirror that does not lead.
             #expect(SplitLeafView.obscures(pane, isNonLeaderMirror: false))
         }
+    }
+
+    @Test(.enabled(if: LocalSSHD.isAvailable), .timeLimit(.minutes(3)))
+    func keys_typed_into_a_link_that_died_unseen_reach_the_shell_after_the_reattach() async throws {
+        try await withSSHDHost { host in
+            let fixture = Fixture(host)
+            let pane = fixture.pane()
+            fixture.hosts.panes = { _ in [pane] }
+            let surface = RecordingPaneHost()
+            let driver = RemotePaneDriver(name: pane.sessionName, surface: surface, hosts: fixture.hosts)
+            defer { driver.stop() }
+            driver.start()
+            try await Task.sleep(for: .seconds(1))
+            driver.sendInput(Data("printf 'before-%s\\n' freeze\n".utf8))
+            try await surface.waitFor { $0.screen.contains("before-freeze") }
+
+            // ssh stops with no end, as when the Mac sleeps: the socket takes
+            // the keys, and only the heartbeat finds the dead link.
+            // The ssh clients only: the pattern must not match the sshd.
+            let ssh = "/usr/bin/ssh .*\(host.sshd.directory.path)"
+            try Self.signal("-STOP", ssh)
+            for key in "printf 'after-%s\\n' freeze" {
+                driver.sendInput(Data(String(key).utf8))
+                try await Task.sleep(for: .milliseconds(15))
+            }
+            let deadline = Date().addingTimeInterval(20)
+            while !pane.isRemoteLinkLost, Date() < deadline {
+                try await Task.sleep(for: .milliseconds(100))
+            }
+            #expect(pane.isRemoteLinkLost)
+            try Self.signal("-KILL", ssh)
+
+            // The next key logs in again, and the wake after the login
+            // attaches. The keys that the dead link took go first.
+            fixture.woken.removeAll()
+            driver.sendInput(Data("\n".utf8))
+            let wake = RemoteHosts.wakeName(for: pane.sessionName)
+            let login = Date().addingTimeInterval(20)
+            while !fixture.woken.contains(wake), Date() < login {
+                try await Task.sleep(for: .milliseconds(100))
+            }
+            notify_post(wake)
+            try await surface.waitFor { $0.screen.contains("after-freeze") }
+            #expect(host.sshd.acceptedLogins() == 2)
+        }
+    }
+
+    private static func signal(_ signal: String, _ pattern: String) throws {
+        let pkill = Process()
+        pkill.executableURL = URL(fileURLWithPath: "/usr/bin/pkill")
+        pkill.arguments = [signal, "-f", pattern]
+        try pkill.run()
+        pkill.waitUntilExit()
+        #expect(pkill.terminationStatus == 0, "no ssh to signal")
     }
 
     @Test(.enabled(if: LocalSSHD.isAvailable), .timeLimit(.minutes(3)))

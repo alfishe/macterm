@@ -120,7 +120,7 @@ final class RemotePaneDriver: PaneInputRoute {
                 if let note = made.note { surface.paneFeed(Data(Self.paneText(note).utf8)) }
             }
             let session = PaneSession(
-                name: name, launch: launch, wantsForeground: true, wantsTty: true, reconnects: false,
+                name: name, launch: launch, wantsForeground: true, wantsTty: true, reconnects: false, confirmsInput: true,
                 host: Forward(driver: self, generation: mine, surface: surface),
                 connect: { link.connection }
             )

@@ -88,6 +88,14 @@ final class PaneSession: PaneInputRoute, @unchecked Sendable {
     /// A lost link is tried again (a local server that restarted). A remote\n    /// pane's driver connects again itself, with the app's
     /// backoff.
     private let reconnects: Bool
+    /// Keeps the input that went out until a ping after it answers (a remote
+    /// pane). A link can die with no sign (sleep, a frozen ssh): the socket
+    /// takes the keys, and only the heartbeat finds the dead link seconds
+    /// later. The end of the channel gives that input back to the host
+    /// (`paneInputUndelivered`), so the next attach sends it. A key that
+    /// reached the server just before the link died, with no answer to its
+    /// ping, is sent again.
+    private let confirmsInput: Bool
 
     private let lock = NSLock()
     private var channel: PaneChannel?
@@ -100,6 +108,14 @@ final class PaneSession: PaneInputRoute, @unchecked Sendable {
     /// A claim that came before the first attach.
     private var claimPending = false
     private let output = DispatchQueue(label: "PaneSession.input")
+    /// The input on the current channel that no ping confirmed yet, at most
+    /// 1 MiB (the newest), and its start in `sent`.
+    private var unconfirmed = Data()
+    private var unconfirmedStart = 0
+    /// The bytes of input that went out on the current channel.
+    private var sent = 0
+    /// A ping that confirms input is out.
+    private var confirming = false
 
     init(
         name: String,
@@ -107,6 +123,7 @@ final class PaneSession: PaneInputRoute, @unchecked Sendable {
         wantsForeground: Bool,
         wantsTty: Bool = false,
         reconnects: Bool = true,
+        confirmsInput: Bool = false,
         host: any PaneSessionHost,
         connect: @escaping Connect
     ) {
@@ -115,6 +132,7 @@ final class PaneSession: PaneInputRoute, @unchecked Sendable {
         self.wantsForeground = wantsForeground
         self.wantsTty = wantsTty
         self.reconnects = reconnects
+        self.confirmsInput = confirmsInput
         self.host = host
         self.connect = connect
     }
@@ -153,19 +171,86 @@ final class PaneSession: PaneInputRoute, @unchecked Sendable {
         }
         lock.unlock()
         guard let channel = currentChannel() else {
-            host.paneInputUndelivered(data)
+            // Through the queue, after the input that is in it.
+            output.async { [host] in host.paneInputUndelivered(data) }
             return
         }
-        output.async { [host] in
-            do { try channel.sendInput(data) } catch ProtocolFrame.FrameError.tooLarge {
+        output.async { [self] in
+            do {
+                try channel.sendInput(data)
+                if confirmsInput { sentInput(data, on: channel) }
+            } catch ProtocolFrame.FrameError.tooLarge {
                 // A paste over the frame limit never fits: the link is fine.
                 logger.info("pane \(self.name, privacy: .public): input too large")
             } catch {
                 logger.info("pane \(self.name, privacy: .public): input not sent: \(String(describing: error), privacy: .public)")
-                host.paneInputUndelivered(data)
+                giveBackInput(from: channel, adding: data)
                 host.paneLinkLost()
             }
         }
+    }
+
+    /// Input went out on `channel`: keep it until a ping confirms it.
+    private func sentInput(_ data: Data, on channel: PaneChannel) {
+        lock.lock()
+        defer { lock.unlock() }
+        guard self.channel === channel else {
+            // The channel ended while the input went out, and its input went
+            // back to the host already.
+            host.paneInputUndelivered(data)
+            return
+        }
+        unconfirmed.append(data)
+        sent += data.count
+        let over = unconfirmed.count - (1 << 20)
+        if over > 0 {
+            unconfirmed.removeFirst(over)
+            unconfirmedStart += over
+        }
+        if !confirming { confirm(on: channel) }
+    }
+
+    /// Pings, then forgets the input that went out before the ping. Call it
+    /// under the lock.
+    private func confirm(on channel: PaneChannel) {
+        confirming = true
+        let target = sent
+        Task { [self] in
+            let answered = await (try? channel.ping()) != nil
+            confirmed(upTo: target, on: channel, answered: answered)
+        }
+    }
+
+    private func confirmed(upTo target: Int, on channel: PaneChannel, answered: Bool) {
+        lock.lock()
+        defer { lock.unlock() }
+        confirming = false
+        guard answered, self.channel === channel else { return }
+        let done = min(target - unconfirmedStart, unconfirmed.count)
+        if done > 0 {
+            unconfirmed.removeFirst(done)
+            unconfirmedStart += done
+        }
+        if !unconfirmed.isEmpty { confirm(on: channel) }
+    }
+
+    /// Gives the host the input of `channel` that no ping confirmed, then
+    /// `data`. Under the lock, so input that a later failure gives back
+    /// comes after it.
+    private func giveBackInput(from channel: PaneChannel, adding data: Data) {
+        lock.lock()
+        defer { lock.unlock() }
+        var kept = self.channel === channel ? takeUnconfirmed() : Data()
+        kept.append(data)
+        host.paneInputUndelivered(kept)
+    }
+
+    /// Call it under the lock.
+    private func takeUnconfirmed() -> Data {
+        let kept = unconfirmed
+        unconfirmed = Data()
+        unconfirmedStart = sent
+        return kept
     }
 
     /// The input that never reached a channel. Call it after `stop()`.
@@ -355,13 +440,20 @@ final class PaneSession: PaneInputRoute, @unchecked Sendable {
         defer { lock.unlock() }
         guard !stopped else { return false }
         self.channel = channel
+        unconfirmed = Data()
+        unconfirmedStart = 0
+        sent = 0
         return true
     }
 
+    /// The channel ended: its input that no ping confirmed goes back to the
+    /// host.
     private func uninstall() {
         lock.lock()
+        defer { lock.unlock() }
+        let kept = takeUnconfirmed()
         channel = nil
-        lock.unlock()
+        if !kept.isEmpty { host.paneInputUndelivered(kept) }
     }
 
     /// The first attach went out. The input that waited is queued before

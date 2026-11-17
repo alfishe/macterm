@@ -113,6 +113,13 @@ final class PaneChannel: @unchecked Sendable {
         try connection.send(frame: ProtocolFrame(channel: number, kind: .msg, body: writer.data))
     }
 
+    /// A ping on the channel's connection. Its answer says that the server
+    /// read every frame that went before it.
+    func ping() async throws {
+        guard let connection else { throw ServerClientError.disconnected }
+        _ = try await connection.call(MactermProtocol.Ping.self, .init())
+    }
+
     /// Stops the output of a pane that no one sees. The session's messages
     /// still come. `resume` brings a snapshot first (design/003 §6).
     func pause() async throws {
