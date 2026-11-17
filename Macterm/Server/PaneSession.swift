@@ -33,6 +33,8 @@ protocol PaneSessionHost: AnyObject, Sendable {
     func paneLinkLost()
     /// Input that the channel could not take (the link is down). The host
     /// keeps it for the next attach: a key never goes away with no sign.
+    /// The session calls it under its lock, so it must not block or call
+    /// the session.
     func paneInputUndelivered(_ data: Data)
     /// The session did not come back. The pane has nothing to show.
     func paneGone()
@@ -85,8 +87,8 @@ final class PaneSession: PaneInputRoute, @unchecked Sendable {
     private let launch: Launch?
     private let wantsForeground: Bool
     private let wantsTty: Bool
-    /// A lost link is tried again (a local server that restarted). A remote\n    /// pane's driver connects again itself, with the app's
-    /// backoff.
+    /// A lost link is tried again (a local server that restarted). A remote
+    /// pane's driver connects again itself, with the app's backoff.
     private let reconnects: Bool
     /// Keeps the input that went out until a ping after it answers (a remote
     /// pane). A link can die with no sign (sleep, a frozen ssh): the socket
@@ -253,11 +255,12 @@ final class PaneSession: PaneInputRoute, @unchecked Sendable {
         return kept
     }
 
-    /// The input that never reached a channel. Call it after `stop()`.
+    /// The input that never reached a channel, then the input that no ping
+    /// confirmed. Call it after `stop()`.
     func takePendingInput() -> Data {
         lock.lock()
         defer { lock.unlock() }
-        let kept = pendingInput
+        let kept = pendingInput + takeUnconfirmed()
         pendingInput = Data()
         return kept
     }
