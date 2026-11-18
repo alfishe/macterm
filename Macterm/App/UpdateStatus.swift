@@ -28,9 +28,9 @@ enum UpdateStatus: Equatable {
     }
 
     /// The title of the button that installs the waiting update: Update to
-    /// v2.1.0. A Tip build has a longer version (2.1.0-tip.12), and it shows
-    /// in full, because it is the only name of that build. With no version,
-    /// the title does not guess one.
+    /// v2.1.0. A Tip build shows its whole version (2.1.0-tip.57). That is
+    /// the only name of the build. With no version, the title does not guess
+    /// one.
     var installTitle: String {
         guard case let .readyToRestart(version?) = self, !version.isEmpty else {
             return String(localized: "Restart to Update")
@@ -180,7 +180,7 @@ struct UpdateMachine: Equatable {
             if userSession, !status.isReadyToRestart { status = .extracting }
         case let .readyToInstall(onQuit, version):
             if onQuit { installsOnQuit = true }
-            status = .readyToRestart(version: version ?? foundVersion ?? waitingVersion)
+            status = .readyToRestart(version: version ?? foundVersion)
         case .sessionEnded:
             settle()
         case .restartRequested:
@@ -221,11 +221,5 @@ struct UpdateMachine: Equatable {
         userSession = false
         foundVersion = nil
         if !status.isReadyToRestart { status = .idle }
-    }
-
-    /// The version of the update that already waits, if any.
-    private var waitingVersion: String? {
-        if case let .readyToRestart(version) = status { return version }
-        return nil
     }
 }

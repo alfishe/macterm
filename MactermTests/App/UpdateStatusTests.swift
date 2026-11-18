@@ -25,7 +25,7 @@ struct UpdateStatusTests {
     }
 
     @Test
-    func a_found_update_downloads_with_a_ring_then_offers_restart() {
+    func a_found_update_downloads_with_a_ring_then_offers_the_install_button() {
         var machine = UpdateMachine()
         machine.handle(.userCheckStarted)
         #expect(machine.handle(found(.notDownloaded)) == .init(reply: .install))
@@ -78,7 +78,7 @@ struct UpdateStatusTests {
     /// Sparkle downloads a scheduled update by itself. The toolbar shows
     /// nothing until the update is ready.
     @Test
-    func a_scheduled_download_shows_only_restart_when_ready() {
+    func a_scheduled_download_shows_only_the_install_button_when_ready() {
         var machine = UpdateMachine()
         machine.handle(.readyToInstall(onQuit: true, version: "2.2.0"))
         #expect(machine.status == .readyToRestart(version: "2.2.0"))
@@ -89,8 +89,17 @@ struct UpdateStatusTests {
     /// full.
     @Test
     func a_tip_update_shows_its_whole_version() {
-        let status = UpdateStatus.readyToRestart(version: "1.33.2-tip.57")
-        #expect(status.installTitle == "Update to v1.33.2-tip.57")
+        let status = UpdateStatus.readyToRestart(version: "2.1.0-tip.57")
+        #expect(status.installTitle == "Update to v2.1.0-tip.57")
+    }
+
+    /// A newer background download replaces the update that waits.
+    @Test
+    func a_newer_update_replaces_the_waiting_version() {
+        var machine = UpdateMachine()
+        machine.handle(.readyToInstall(onQuit: true, version: "2.2.0"))
+        machine.handle(.readyToInstall(onQuit: true, version: "2.3.0"))
+        #expect(machine.status == .readyToRestart(version: "2.3.0"))
     }
 
     /// With no version, the title does not guess one.
