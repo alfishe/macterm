@@ -11664,6 +11664,23 @@
         }
       }
     },
+    "Update to v%@" : {
+      "comment" : "Toolbar button that installs the downloaded update and relaunches. The value is a version number, for example 2.1.0.",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "v%@(으)로 업데이트"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新到 v%@"
+          }
+        }
+      }
+    },
     "Updates" : {
       "comment" : "Settings pane",
       "localizations" : {
