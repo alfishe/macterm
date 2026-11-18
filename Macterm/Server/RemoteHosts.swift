@@ -50,7 +50,8 @@ enum RemotePaneAnswer {
 /// - **Lost.** A pane whose link stopped, or whose connect failed, is lost
 ///   (`Pane.isRemoteLinkLost`): its cursor says disabled, and its badge
 ///   says `Reconnecting` while a try runs (`Pane.isRemoteReconnecting`),
-///   else `Connection Lost`.
+///   else `Connection Lost`. A pane that came back after a restart says
+///   `Reconnecting` while a slow first connect runs (`firstConnectIsSlow`).
 ///   It connects again by itself (`AppState.reconnectDroppedRemotePanes`
 ///   with `RemoteReconnectPolicy`): such a try never asks the user anything
 ///   (`reconnect`, a quiet login). A key in the pane connects at once, and
@@ -252,6 +253,9 @@ final class RemoteHosts {
     /// on a missing session is gone and closes the pane.
     func sessionAttached(_ session: String, pane: Pane?) {
         let directory = creating.removeValue(forKey: session)
+        // No try runs now. A slow first connect can mark the pane after the
+        // answer to attach (`firstConnectIsSlow`).
+        if let pane, !pane.isRemoteLinkLost, pane.isRemoteReconnecting { pane.isRemoteReconnecting = false }
         guard let pane, pane.hostSessionDirectory == nil,
               let folder = directory ?? Target(pane)?.directory
         else { return }
@@ -824,6 +828,17 @@ final class RemoteHosts {
         }
         if pane.isRemoteReconnecting { pane.isRemoteReconnecting = false }
         if !lost { quiet.remove(pane.sessionName) }
+    }
+
+    /// The first connect of a pane whose session ran on the host (a pane
+    /// that came back after a restart) runs long: the badge says
+    /// `Reconnecting` until the session attaches or the connect fails. A new
+    /// pane shows nothing, because its first connect can wait for a login
+    /// question.
+    func firstConnectIsSlow(_ pane: Pane?) {
+        guard let pane, pane.hostSessionDirectory != nil, !pane.isRemoteLinkLost, !pane.isRemoteReconnecting else { return }
+        logger.info("remote pane: session=\(pane.sessionName, privacy: .public) first connect is slow")
+        pane.isRemoteReconnecting = true
     }
 
     /// A try starts for this lost pane: the badge says `Reconnecting`.

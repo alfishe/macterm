@@ -293,6 +293,53 @@ struct RemoteHostsTests {
         }
     }
 
+    /// After a restart of the app, a pane whose session ran on the host
+    /// connects for the first time. A slow connect shows `Reconnecting`, and
+    /// the attach clears it. A new pane in the same connect shows nothing.
+    @Test(.enabled(if: LocalSSHD.isAvailable), .timeLimit(.minutes(3)))
+    func a_slow_first_connect_of_a_restored_pane_shows_reconnecting() async throws {
+        try await withSSHDHost { host in
+            let before = Fixture(host, wakes: true)
+            let restored = before.pane()
+            before.hosts.pane = { _ in restored }
+            let first = RemotePaneDriver(name: restored.sessionName, surface: RecordingPaneHost(), hosts: before.hosts)
+            first.start()
+            let deadline = Date().addingTimeInterval(30)
+            while restored.hostSessionDirectory == nil, Date() < deadline {
+                try await Task.sleep(for: .milliseconds(100))
+            }
+            #expect(restored.hostSessionDirectory == before.directory)
+            // The app quits: the channel and the login end, the session stays.
+            first.stop()
+            host.sshd.dropConnections()
+
+            // The next login takes 3 s to reach the host.
+            try host.sshd.addToConfig("ProxyCommand /bin/sh -c 'sleep 3; exec /usr/bin/nc %h %p'")
+            let after = Fixture(host, wakes: true)
+            let fresh = after.pane()
+            after.hosts.pane = { $0 == restored.sessionName ? restored : fresh }
+            let views = [RecordingPaneHost(), RecordingPaneHost()]
+            let drivers = zip([restored, fresh], views).map { pane, view in
+                RemotePaneDriver(name: pane.sessionName, surface: view, hosts: after.hosts, slowConnectAfter: .seconds(1))
+            }
+            defer { drivers.forEach { $0.stop() } }
+            drivers.forEach { $0.start() }
+            try await Task.sleep(for: .seconds(1.5))
+            #expect(restored.remoteLinkBadge == .reconnecting)
+            #expect(!restored.isRemoteLinkLost)
+            #expect(fresh.remoteLinkBadge == nil)
+
+            try await views[0].waitFor { $0.resets > 0 }
+            try await views[1].waitFor { $0.resets > 0 }
+            let attached = Date().addingTimeInterval(10)
+            while restored.remoteLinkBadge != nil, Date() < attached {
+                try await Task.sleep(for: .milliseconds(100))
+            }
+            #expect(restored.remoteLinkBadge == nil)
+            #expect(fresh.remoteLinkBadge == nil)
+        }
+    }
+
     @Test(.enabled(if: LocalSSHD.isAvailable), .timeLimit(.minutes(3)))
     func an_automatic_try_asks_nothing_and_a_key_logs_in() async throws {
         try await withSSHDHost(passphrase: "open sesame") { host in
