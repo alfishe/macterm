@@ -51,9 +51,9 @@ final class RemotePaneDriver: PaneInputRoute {
     /// (`RemoteHosts.firstConnectIsSlow`).
     private let slowConnectAfter: Duration
 
-    /// A normal connect (the login, the server's `hello`) ends in a second
-    /// or two. A connect to a host whose server does not answer runs until
-    /// the handshake gives up (`RemoteServers.Configuration.handshakeTimeout`).
+    /// A connect to a host whose server does not answer runs until the
+    /// handshake gives up (15 s, `RemoteServers.Configuration.handshakeTimeout`).
+    /// A login that is slower than this time shows the badge too.
     static let slowConnectAfter: Duration = .seconds(3)
 
     init(

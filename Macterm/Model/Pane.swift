@@ -67,7 +67,7 @@ final class Pane: Identifiable {
     /// its badge says `Reconnecting`. Never persisted.
     var isRemoteReconnecting = false
 
-    /// The badge of a remote pane whose connection is lost, or nil.
+    /// The badge of a remote pane whose connection is lost or slow, or nil.
     enum RemoteLinkBadge: Equatable, CaseIterable {
         /// A try, or a slow first connect, runs now.
         case reconnecting

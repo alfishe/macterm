@@ -834,9 +834,13 @@ final class RemoteHosts {
     /// that came back after a restart) runs long: the badge says
     /// `Reconnecting` until the session attaches or the connect fails. A new
     /// pane shows nothing, because its first connect can wait for a login
-    /// question.
+    /// question. A host whose link is ready connects no more: another view
+    /// of the pane (a second window) can show it live.
     func firstConnectIsSlow(_ pane: Pane?) {
-        guard let pane, pane.hostSessionDirectory != nil, !pane.isRemoteLinkLost, !pane.isRemoteReconnecting else { return }
+        guard let pane, pane.hostSessionDirectory != nil, !pane.isRemoteLinkLost, !pane.isRemoteReconnecting,
+              let target = Target(pane)
+        else { return }
+        if case .ready = hosts[target.destination] { return }
         logger.info("remote pane: session=\(pane.sessionName, privacy: .public) first connect is slow")
         pane.isRemoteReconnecting = true
     }
