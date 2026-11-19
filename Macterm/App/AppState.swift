@@ -194,7 +194,7 @@ final class AppState {
         if let visible = saved[0].projectMemoryPanelVisible { first.projectMemoryPanelVisible = visible }
         // After the project: making a project active opens its section, and
         // the saved set must win over that.
-        if let expanded = saved[0].expandedProjectIDs { first.expandedProjects = Set(expanded) }
+        if let expanded = saved[0].expandedProjectIDs { first.expandedRows = Set(expanded) }
         if let frame = saved[0].frame {
             first.frame = frame
             applyRestoredFrame(of: first)
@@ -382,7 +382,7 @@ final class AppState {
             if let width = restoring.sidebarWidth { window.sidebarWidth = width }
             if let visible = restoring.sidebarVisible { window.sidebarVisible = visible }
             if let visible = restoring.projectMemoryPanelVisible { window.projectMemoryPanelVisible = visible }
-            if let expanded = restoring.expandedProjectIDs { window.expandedProjects = Set(expanded) }
+            if let expanded = restoring.expandedProjectIDs { window.expandedRows = Set(expanded) }
             if let frame = restoring.frame { window.frame = frame }
         } else if hasRestoredWindows {
             // A window the user opened, not one being restored: the sidebar
@@ -1587,7 +1587,7 @@ final class AppState {
                         sidebarVisible: window.sidebarVisible,
                         projectMemoryPanelVisible: window.projectMemoryPanelVisible,
                         frame: window.frame,
-                        expandedProjectIDs: window.expandedProjects.sorted { $0.uuidString < $1.uuidString }
+                        expandedProjectIDs: window.expandedRows.sorted { $0.uuidString < $1.uuidString }
                     )
                 },
             quickTerminal: quickTerminalSnapshot(),
@@ -2182,7 +2182,7 @@ final class AppState {
         }
         workspaces.removeValue(forKey: projectID)
         for window in windows {
-            window.expandedProjects.remove(projectID)
+            window.expandedRows.remove(projectID)
         }
         vacateWindows(showing: projectID)
         // Every removal path comes through here, so a removed project's
@@ -2218,6 +2218,33 @@ final class AppState {
             kind: .removeProject(projectID),
             title: String(localized: "Remove project with running processes?"),
             message: String(localized: "A process is still running in this project. Removing it ends every process in its tabs."),
+            confirmTitle: String(localized: "Remove"),
+            host: host,
+            onConfirm: removal
+        ))
+    }
+
+    /// Remove a sidebar group (design 013). An empty group goes at once. A
+    /// group with projects always asks, and says how many: the removal ends
+    /// the sessions of each project inside, at any depth. Ungroup is the
+    /// path that keeps them.
+    func requestRemoveGroup(
+        _ group: Project,
+        projectCount: Int,
+        host: DialogHost = .mainWindow,
+        removal: @escaping @MainActor () -> Void
+    ) {
+        guard projectCount > 0 else {
+            removal()
+            return
+        }
+        present(PendingDialog(
+            kind: .removeGroup(group.id),
+            title: String(localized: "Remove the group “\(group.name)”?"),
+            message: String(localized: """
+            This group contains \(projectCount) projects. Macterm removes them and stops all processes \
+            in their tabs. To keep the projects, select Ungroup.
+            """),
             confirmTitle: String(localized: "Remove"),
             host: host,
             onConfirm: removal

@@ -5414,6 +5414,23 @@
         }
       }
     },
+    "Move Out" : {
+      "comment" : "Sidebar menu item for a project group",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그룹에서 꺼내기"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移出分组"
+          }
+        }
+      }
+    },
     "Move Pane Down" : {
       "localizations" : {
         "ko" : {
@@ -5526,6 +5543,23 @@
         }
       }
     },
+    "Move to Group" : {
+      "comment" : "Sidebar menu item for a project group",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그룹으로 이동"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移到分组"
+          }
+        }
+      }
+    },
     "Move to Project" : {
       "localizations" : {
         "ko" : {
@@ -5586,6 +5620,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新建桌面小组件"
+          }
+        }
+      }
+    },
+    "New Group" : {
+      "comment" : "Sidebar menu item for a project group",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새로운 그룹"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建分组"
           }
         }
       }
@@ -8110,6 +8161,23 @@
         }
       }
     },
+    "Remove Group" : {
+      "comment" : "Sidebar menu item for a project group",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그룹 제거"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除分组"
+          }
+        }
+      }
+    },
     "Remove Project" : {
       "localizations" : {
         "ko" : {
@@ -8222,6 +8290,23 @@
         }
       }
     },
+    "Remove the group “%@”?" : {
+      "comment" : "Title of the question before a sidebar group and its projects are removed",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” 그룹을 제거하시겠습니까?"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "要移除分组“%@”吗？"
+          }
+        }
+      }
+    },
     "Remove widget?" : {
       "localizations" : {
         "ko" : {
@@ -8298,6 +8383,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "重新命名当前标签页"
+          }
+        }
+      }
+    },
+    "Rename Group" : {
+      "comment" : "Sidebar menu item for a project group",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그룹 이름 변경"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新命名分组"
           }
         }
       }
@@ -11046,6 +11148,22 @@
         }
       }
     },
+    "This group contains %lld projects. Macterm removes them and stops all processes in their tabs. To keep the projects, select Ungroup." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "이 그룹에는 프로젝트 %lld개가 있습니다. Macterm은 이 프로젝트를 제거하고 탭의 모든 프로세스를 종료합니다. 프로젝트를 유지하려면 그룹 해제를 선택하십시오."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此分组包含 %lld 个项目。Macterm 会移除这些项目，并结束其标签页中的所有进程。要保留这些项目，请选择“取消分组”。"
+          }
+        }
+      }
+    },
     "This link opens in the default application. Continue only if you know and trust the destination." : {
       "localizations" : {
         "ko" : {
@@ -11490,6 +11608,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "不可用"
+          }
+        }
+      }
+    },
+    "Ungroup" : {
+      "comment" : "Sidebar menu item for a project group",
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "그룹 해제"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消分组"
           }
         }
       }
@@ -12426,6 +12561,30 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "显示“%@”的密码"
+          }
+        }
+      }
+    },
+    "sidebar.group.defaultName" : {
+      "comment" : "Name of a new sidebar group",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "New Group"
+          }
+        },
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "새로운 그룹"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新建分组"
           }
         }
       }
