@@ -1196,6 +1196,22 @@
         }
       }
     },
+    "Agent Sessions" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "에이전트 세션"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "智能体会话"
+          }
+        }
+      }
+    },
     "All" : {
       "comment" : "Settings → Extensions: the filter that shows every extension",
       "localizations" : {
@@ -7882,6 +7898,22 @@
         }
       }
     },
+    "Records each agent's session every minute and at quit. Starts the agent again when its pane's session ended." : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "매분 그리고 종료할 때 각 에이전트의 세션을 기록합니다. 페인의 세션이 끝나면 에이전트를 다시 시작합니다."
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每分钟及退出时记录每个智能体的会话。窗格的会话结束后，重新启动该智能体。"
+          }
+        }
+      }
+    },
     "Red" : {
       "comment" : "Project color tag",
       "localizations" : {
@@ -8520,6 +8552,22 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "恢复窗格"
+          }
+        }
+      }
+    },
+    "Restore agent sessions" : {
+      "localizations" : {
+        "ko" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "에이전트 세션 복원"
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "恢复智能体会话"
           }
         }
       }

@@ -1097,6 +1097,10 @@ final class AppState {
     @ObservationIgnored
     var sessionClient: SessionClient = .live
 
+    /// Fork: the minute timer of `AppState+AgentRestore`.
+    @ObservationIgnored
+    var agentCaptureTimer: Timer?
+
     /// The quick terminal's split state once this AppState has adopted it
     /// (`adoptQuickTerminal`) — the one whose tab the snapshot carries and
     /// whose sessions the reaper spares. Resolved lazily to the panel's
@@ -1535,6 +1539,9 @@ final class AppState {
         // sessions survived (#285) — ahead of the loadFailed gate, since
         // pinned records come from pinned.yaml, not the snapshot.
         Task { await materializeRestoredPinnedTabs() }
+        // Fork: record agent sessions each minute, and start again the agents
+        // of panes whose session died (AppState+AgentRestore).
+        startAgentSessionPersistence(projectOrder: projects.map(\.id))
         // A failed snapshot LOAD gives no names: nothing is ended (an empty
         // claim set would mark every live session an orphan).
         guard !workspaceStore.loadFailed else { return }
@@ -1635,7 +1642,7 @@ final class AppState {
     /// Every incubated pane gets the rendered pane's exit classifier, whether
     /// warmed at project selection, pinned restore, or CLI creation. Read its
     /// project at exit time: a tab may have moved since it was warmed.
-    private func warmPane(_ pane: Pane) {
+    func warmPane(_ pane: Pane) {
         incubatePane(pane)
         SurfaceRegistry.shared.surfaces(of: pane)[0].nsView?.onProcessExit = { [weak self, weak pane] in
             guard let self, let pane else { return }

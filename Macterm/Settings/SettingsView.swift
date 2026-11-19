@@ -583,6 +583,7 @@ private struct GeneralSettings: View {
     /// project, and it diverged from the `.onChange` write-through under test.
     @State private var autoTilingEnabled: Bool = Preferences.shared.autoTilingEnabled
     @State private var reconnectRemotePanes: Bool = Preferences.shared.reconnectRemotePanes
+    @State private var agentAutoRestore: Bool = Preferences.shared.agentAutoRestore
     @State private var textFilePlacement: TextFilePlacement = Preferences.shared.textFilePlacement
     @State private var appLanguage: String? = Preferences.shared.appLanguage
 
@@ -746,6 +747,20 @@ private struct GeneralSettings: View {
                 }
             } header: {
                 DocsSectionHeader("Remote Projects", docs: .remoteProjects)
+            }
+
+            // Fork: AppState+AgentRestore.
+            Section("Agent Sessions") {
+                Toggle(isOn: $agentAutoRestore) {
+                    Text("Restore agent sessions")
+                    Text(
+                        "Records each agent's session every minute and at quit. Starts the agent again when its pane's session ended."
+                    )
+                    .settingsDescription()
+                }
+                .onChange(of: agentAutoRestore) { _, v in
+                    Preferences.shared.agentAutoRestore = v
+                }
             }
 
             // Shells always keep running after quit and reattach on the next

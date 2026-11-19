@@ -151,6 +151,19 @@ final class Pane: Identifiable {
     @ObservationIgnored
     private var agentIconPID: pid_t?
 
+    /// Fork: the agent session that runs in this pane (`AgentResume`), so
+    /// that a launch after the pane's session died can start the agent again.
+    /// Set by `AppState.captureAgentResumes`, saved in the snapshot, and read
+    /// back by `WorkspaceSerializer.restoreNode`.
+    @ObservationIgnored
+    var agentResume: AgentResume?
+
+    /// Fork: the restored `agentResume` waits for `AppState.restoreAgentSessions`.
+    /// The capture leaves the pane alone while this is true: before the
+    /// restore, the pane shows a shell, and a capture would clear the record.
+    @ObservationIgnored
+    var agentResumePending = false
+
     /// The pane rang BEL and nobody has looked at it since. Set by `ringBell`
     /// (the `GHOSTTY_ACTION_RING_BELL` route), cleared by `acknowledgeBell` —
     /// which the same events that acknowledge a finished command drive: the

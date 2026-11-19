@@ -655,6 +655,14 @@ final class Preferences {
         didSet { Keys.showOutdatedSessionBadge.write(showOutdatedSessionBadge, to: defaults) }
     }
 
+    /// Fork: Settings → General → Agent Sessions. On by default. On, Macterm
+    /// records the AI agent session of each pane every minute and at quit,
+    /// and at launch starts the agent again in a pane whose session died
+    /// (`AppState+AgentRestore`). Off, it records and restores nothing.
+    var agentAutoRestore: Bool {
+        didSet { Keys.agentAutoRestore.write(agentAutoRestore, to: defaults) }
+    }
+
     /// The keys of copy mode: Helix or Vim. `CopyModeController.enter` reads
     /// it, so a change applies to the next time the mode starts.
     var copyModeKeymap: CopyModeKeymap {
@@ -1082,6 +1090,7 @@ final class Preferences {
         tabSwitcherPosition = Keys.tabSwitcherPosition.read(defaults)
         showProjectInsightsButton = Keys.showProjectInsightsButton.read(defaults)
         showOutdatedSessionBadge = Keys.showOutdatedSessionBadge.read(defaults)
+        agentAutoRestore = Keys.agentAutoRestore.read(defaults)
         copyModeKeymap = Keys.copyModeKeymap.read(defaults)
         Self.runOneTimeMigrations(defaults: defaults)
     }
@@ -1282,6 +1291,7 @@ final class Preferences {
         static let tabSwitcherPosition = PreferenceStorageKey("macterm.toolbar.tabSwitcherPosition", default: TabSwitcherPosition.trailing)
         static let showProjectInsightsButton = PreferenceStorageKey("macterm.toolbar.showProjectInsightsButton", default: true)
         static let showOutdatedSessionBadge = PreferenceStorageKey("macterm.panes.showOutdatedSessionBadge", default: true)
+        static let agentAutoRestore = PreferenceStorageKey("macterm.agents.autoRestore", default: true)
         static let copyModeKeymap = PreferenceStorageKey("macterm.copyMode.keymap", default: CopyModeKeymap.vim)
 
         static let loadsDefaultGhosttyConfigFiles = "macterm.ghostty.loadsDefaultConfigFiles"

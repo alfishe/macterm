@@ -526,6 +526,8 @@ extension AppState {
     /// (the moment the recipe is about to matter), persist the snapshot, and
     /// rewrite the file.
     func persistForTermination() {
+        // Fork: the agent sessions as they are at quit (AppState+AgentRestore).
+        captureAgentResumes()
         refreshPinnedDeclarationsFromLiveTabs()
         refreshDesktopWidgetRecipes()
         saveWorkspaces()

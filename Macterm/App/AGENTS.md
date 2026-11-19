@@ -335,3 +335,16 @@ When you right-click the Dock tile, you see **New Window**, **New Tab**, **New P
 
 - `Macterm/App/`
   - `PaletteHotkeys`: the chords of extensions, by palette id under `macterm.hotkey.palette.<id>`. The `.passthrough` and `.global` flags are beside them. A Carbon id for each process starts at `carbonIDBase`. It gives one answer to `MainAppResponder`, `PaletteResponder` and `isAppShortcut`. A row under Extensions in Keymaps has the key `palette:<id>`.
+
+## Agent sessions (fork)
+
+This section is for this fork only. The other changes of the fork are marked with a `Fork:` comment in the code.
+
+`AppState+AgentRestore` records the AI agent session of each local pane and, at launch, starts the agent again in a pane whose session died (a reboot, a crash of the session server, an update that ended the sessions). A session that survived needs nothing: its agent still runs.
+
+- **The record is `AgentResume`** (agent, session id, directory, flags without the session selectors). `Pane.agentResume` holds it. `PaneSnapshot.agentResume` saves it, with no change of the schema version. `WorkspaceSerializer.restoreNode` reads it back and sets `Pane.agentResumePending`.
+- **The capture** (`captureAgentResumes`) runs on its own minute timer (`agentCaptureTimer`) and in `persistForTermination`. Not on the poll: `PollCadence` pauses when no window is visible. A pane with no foreground keeps its record. A pane at a shell prompt or in another program loses it. A pane that waits for its restore is not captured, because it shows a shell until then.
+- **The restore** (`restoreAgentSessions`) runs once, 3 seconds after `performWhenRestored`, one pane at a time. It warms the pane (`warmPane`), waits for an idle shell (`ProcessInspector.foregroundProcessIsShell`), and types `AgentResume.shellCommand` with `GhosttyTerminalNSView.sendText`. Then it waits until the agent is ready before the next pane: a resume loads the whole transcript, and several at a time put the Mac into swap. It also waits while memory pressure is critical.
+- **It never types** into a pane that runs another program, for a session that runs somewhere else (`AgentSessionFiles.sessionIsRunning`), for a directory that is gone, or into a dialog of the agent. A timeout moves on to the next pane.
+- **The agent files are not ours** (`AgentSessionFiles`): Claude Code's `~/.claude/sessions/<pid>.json` and Qoder CLI's segment files. Every read fails soft. An agent update can change them; then the capture records nothing, and nothing breaks.
+- `Preferences.agentAutoRestore` (Settings → General → Agent Sessions, default on) turns off the capture and the restore. Off, the capture removes every record, so that turning it on again never resumes an old session.

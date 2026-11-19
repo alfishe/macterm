@@ -209,6 +209,10 @@ struct PaneSnapshot: Codable {
     /// (from before v2) starts one with no question. Optional, so older
     /// files decode it as nil.
     var hostSessionDirectory: String?
+    /// Fork: the agent session of a LOCAL pane (`AgentResume`), so that a
+    /// launch after the session died starts the agent again. Optional, no
+    /// schema change: an older build ignores the key.
+    var agentResume: AgentResume?
     // No `title`: the tab name is derived live from the pane's foreground
     // process, so there's nothing per-pane to persist. (An older snapshot's
     // `title` key is harmlessly ignored on decode.)
@@ -224,7 +228,8 @@ struct PaneSnapshot: Codable {
         sessionID: UUID? = nil,
         sessionName: String? = nil,
         workingDirectory: String? = nil,
-        hostSessionDirectory: String? = nil
+        hostSessionDirectory: String? = nil,
+        agentResume: AgentResume? = nil
     ) {
         self.id = id
         self.projectPath = projectPath
@@ -234,6 +239,7 @@ struct PaneSnapshot: Codable {
         self.sessionName = sessionName
         self.workingDirectory = workingDirectory
         self.hostSessionDirectory = hostSessionDirectory
+        self.agentResume = agentResume
     }
 }
 
@@ -543,7 +549,8 @@ enum WorkspaceSerializer {
                 workingDirectory: liveCwd,
                 hostSessionDirectory: p.isRemote ? p.hostSessionDirectory.map { known in
                     SurfaceRegistry.shared.view(of: p)?.currentPwd.flatMap { HostCommands.isSafeHostFolder($0) ? $0 : nil } ?? known
-                } : nil
+                } : nil,
+                agentResume: p.isRemote ? nil : p.agentResume
             ))
         case let .split(b):
             return .split(SplitBranchSnapshot(
@@ -596,7 +603,12 @@ enum WorkspaceSerializer {
             if p.needsAttention == true {
                 pane.restoreNeedsAttention(failed: p.completionFailed == true)
             }
-            if pane.isRemote { pane.hostSessionDirectory = p.hostSessionDirectory }
+            if pane.isRemote {
+                pane.hostSessionDirectory = p.hostSessionDirectory
+            } else if let resume = p.agentResume {
+                pane.agentResume = resume
+                pane.agentResumePending = true
+            }
             return .pane(pane)
         case let .split(b):
             return .split(SplitBranch(
