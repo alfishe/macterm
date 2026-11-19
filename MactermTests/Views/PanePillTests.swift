@@ -79,17 +79,17 @@ struct PanePillTests {
         #expect(alone < widths[0])
     }
 
-    /// The copy mode pill reserves no width: an open pill takes the width
-    /// of its title, so a change of the mode animates the width.
-    @Test
-    func an_open_copy_mode_pill_takes_the_width_of_its_title() {
-        let widths = ["Visual", "Copy Mode", "Visual Block"].map { title in
-            Self.size(PanePillLabel(title: title, reveal: 1) {
+    /// An open copy mode pill keeps its width when the mode changes, under
+    /// each keymap. A narrower pill would leave the pointer and close.
+    @Test(arguments: CopyModeKeymap.allCases)
+    func an_open_copy_mode_pill_keeps_its_width_when_the_mode_changes(_ keymap: CopyModeKeymap) {
+        let titles = keymap.labels
+        let widths = Set(titles.map { title in
+            Self.size(PanePillLabel(title: title, otherTitles: titles, reveal: 1) {
                 Image(systemName: "character.cursor.ibeam")
             }).width
-        }
-        #expect(widths[0] < widths[1], "\(widths)")
-        #expect(widths[1] < widths[2], "\(widths)")
+        })
+        #expect(widths.count == 1, "\(keymap): \(widths)")
     }
 
     /// Every whole badge at rest (chrome, padding and icon, the spinner too)

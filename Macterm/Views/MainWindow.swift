@@ -1207,12 +1207,14 @@ struct ZoomIndicator: View {
 /// the terminal: Zoomed, Copy Mode.
 struct ModePill: View {
     let title: String
+    /// The other titles that this pill can show. See `PanePill.otherTitles`.
+    var otherTitles: [String] = []
     let systemImage: String
     let help: String
     let action: () -> Void
 
     var body: some View {
-        PanePill(title: title, action: action) { Image(systemName: systemImage) }
+        PanePill(title: title, otherTitles: otherTitles, action: action) { Image(systemName: systemImage) }
             .help(help)
     }
 }
@@ -1251,8 +1253,10 @@ struct PanePill<Icon: View>: View {
     let title: String
     /// The other titles that this pill can show. The open pill is as wide
     /// as the longest of them and `title`. A change of the title (a remote
-    /// pane that tries again every few seconds) then does not change the
-    /// width of a pill under the pointer.
+    /// pane that tries again every few seconds, a change of the copy mode)
+    /// then does not change the width of a pill under the pointer. A
+    /// narrower pill would move its leading edge out from under the pointer
+    /// (the row is trailing-aligned), and the pill would close.
     var otherTitles: [String] = []
     var action: (() -> Void)?
     @ViewBuilder let icon: () -> Icon
