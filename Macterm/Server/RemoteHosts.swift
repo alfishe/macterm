@@ -88,10 +88,12 @@ final class RemoteHosts {
             NotificationCenter.default.post(name: .remoteHostDidAnswer, object: $0)
         }
 
-        /// A pane became lost (its link stopped, or a try failed): the
-        /// reconnect sweep runs now, so a try starts at once or is planned.
-        var paneLost: @MainActor (String) -> Void = { _ in
-            NotificationCenter.default.post(name: .remoteLinkDidStop, object: nil)
+        /// A pane became lost: its link stopped, or a try failed
+        /// (`failedTry`). The reconnect sweep runs now, so a try starts at
+        /// once or is planned. After a failed try the backoff starts now
+        /// (`RemoteReconnectPolicy.tryFailed`).
+        var paneLost: @MainActor (_ session: String, _ failedTry: Bool) -> Void = { session, failedTry in
+            NotificationCenter.default.post(name: .remoteLinkDidStop, object: failedTry ? session : nil)
         }
 
         var declines: DeclineStore
@@ -239,7 +241,7 @@ final class RemoteHosts {
             if !isRoamingLink(target.destination) {
                 drop(target.destination)
             }
-            configuration.paneLost(session)
+            configuration.paneLost(session, false)
             return .wait(message: nil)
         case .retry:
             lost.remove(session)
@@ -521,7 +523,7 @@ final class RemoteHosts {
             if link.isRoaming, link.connection.isOpen, case let .ready(current) = hosts[destination], current === link {
                 lost.insert(session)
                 mark(pane, lost: true)
-                configuration.paneLost(session)
+                configuration.paneLost(session, true)
                 return .wait(message: nil)
             }
             // The link broke. Only a failure on the host's current link
@@ -537,7 +539,7 @@ final class RemoteHosts {
                 listFailures[destination] = nil
                 lost.insert(session)
                 mark(pane, lost: true)
-                configuration.paneLost(session)
+                configuration.paneLost(session, true)
                 return .wait(message: nil)
             }
             return await resolve(session, pane: pane, target: target, prompts: prompts)
@@ -676,7 +678,7 @@ final class RemoteHosts {
             for session in sessions {
                 lost.insert(session)
                 mark(pane?(session), lost: true)
-                configuration.paneLost(session)
+                configuration.paneLost(session, true)
             }
         }
         for session in sessions {

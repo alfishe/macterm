@@ -1746,7 +1746,12 @@ final class AppState {
     /// that answers again (`.hostAnswered`) clears the backoff of its panes:
     /// it is one event for each heal, so it adds no load while the host is
     /// down.
-    func reconnectDroppedRemotePanes(trigger: ReconnectTrigger, destination: String? = nil) {
+    /// `failedTry`: the session of a pane whose try failed now. Its backoff
+    /// starts at the end of the try (`RemoteReconnectPolicy.tryFailed`).
+    func reconnectDroppedRemotePanes(trigger: ReconnectTrigger, destination: String? = nil, failedTry: String? = nil) {
+        if let failedTry, let pane = remotePane(session: failedTry) {
+            reconnectPolicy.tryFailed(pane.id, now: Date())
+        }
         guard Preferences.shared.reconnectRemotePanes else { return }
         guard !AppTerminationState.isTerminating else { return }
         // A login may ask, and its sheet brings the app to the front. A wake

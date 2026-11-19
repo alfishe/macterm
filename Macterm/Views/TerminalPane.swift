@@ -197,7 +197,7 @@ struct RemoteLinkPill: View {
     let badge: Pane.RemoteLinkBadge
 
     var body: some View {
-        StatusPill(title: title(of: badge), otherTitles: Pane.RemoteLinkBadge.allCases.map(title(of:))) {
+        StatusPill(title: title(of: badge)) {
             switch badge {
             case .reconnecting:
                 ProgressView().controlSize(.mini)

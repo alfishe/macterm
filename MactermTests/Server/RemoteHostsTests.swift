@@ -340,6 +340,36 @@ struct RemoteHostsTests {
         }
     }
 
+    /// The first connect of a pane that came back after a restart fails
+    /// after a slow start: the badge changes from `Reconnecting` to
+    /// `Connection Lost`, and the failure is a failed try, so the sweep
+    /// waits its backoff before the next try.
+    @Test(.enabled(if: LocalSSHD.isAvailable), .timeLimit(.minutes(3)))
+    func a_failed_slow_first_connect_of_a_restored_pane_shows_connection_lost() async throws {
+        try await withSSHDHost { host in
+            let fixture = Fixture(host, wakes: true)
+            let pane = fixture.pane()
+            // The session ran on the host before the restart.
+            pane.hostSessionDirectory = fixture.directory
+            fixture.hosts.pane = { _ in pane }
+            // The login fails after 3 s.
+            try host.sshd.addToConfig("ProxyCommand /bin/sh -c 'sleep 3; exit 1'")
+            let driver = RemotePaneDriver(
+                name: pane.sessionName, surface: RecordingPaneHost(), hosts: fixture.hosts, slowConnectAfter: .seconds(1)
+            )
+            defer { driver.stop() }
+            driver.start()
+            try await Task.sleep(for: .seconds(1.5))
+            #expect(pane.remoteLinkBadge == .reconnecting)
+            let deadline = Date().addingTimeInterval(30)
+            while pane.remoteLinkBadge != .lost, Date() < deadline {
+                try await Task.sleep(for: .milliseconds(100))
+            }
+            #expect(pane.remoteLinkBadge == .lost)
+            #expect(fixture.failedTries == [pane.sessionName])
+        }
+    }
+
     @Test(.enabled(if: LocalSSHD.isAvailable), .timeLimit(.minutes(3)))
     func an_automatic_try_asks_nothing_and_a_key_logs_in() async throws {
         try await withSSHDHost(passphrase: "open sesame") { host in
@@ -646,12 +676,15 @@ struct RemoteHostsTests {
         var connected: [String] { connections.value }
         private let readyHosts = LockedBox<[String]>([])
         private let stopped = LockedBox<[String]>([])
+        private let failures = LockedBox<[String]>([])
         private let answers = LockedBox<[String]>([])
         /// The hosts whose quiet roaming link heard them again
         /// (`hostAnswered`), in order.
         var answered: [String] { answers.value }
         /// The sessions that became lost (`paneLost`), in order.
         var panesLost: [String] { stopped.value }
+        /// The sessions whose try failed (`paneLost` with `failedTry`), in order.
+        var failedTries: [String] { failures.value }
 
         /// The hosts whose link became ready, in order.
         var ready: [String] {
@@ -685,7 +718,10 @@ struct RemoteHostsTests {
             }
             configuration.hostDidConnect = { [connections] destination in connections.mutate { $0.append(destination) } }
             configuration.linkReady = { [readyHosts] destination in readyHosts.mutate { $0.append(destination) } }
-            configuration.paneLost = { [stopped] session in stopped.mutate { $0.append(session) } }
+            configuration.paneLost = { [stopped, failures] session, failedTry in
+                stopped.mutate { $0.append(session) }
+                if failedTry { failures.mutate { $0.append(session) } }
+            }
             configuration.hostAnswered = { [answers] destination in answers.mutate { $0.append(destination) } }
             hosts = RemoteHosts(connections: host.connections, servers: host.servers, configuration: configuration)
         }
