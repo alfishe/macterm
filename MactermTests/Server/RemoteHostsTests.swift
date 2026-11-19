@@ -313,8 +313,8 @@ struct RemoteHostsTests {
             first.stop()
             host.sshd.dropConnections()
 
-            // The next login takes 3 s to reach the host.
-            try host.sshd.addToConfig("ProxyCommand /bin/sh -c 'sleep 3; exec /usr/bin/nc %h %p'")
+            // The next login takes 4 s to reach the host.
+            try host.sshd.addToConfig("ProxyCommand /bin/sh -c 'sleep 4; exec /usr/bin/nc %h %p'")
             let after = Fixture(host, wakes: true)
             let fresh = after.pane()
             after.hosts.pane = { $0 == restored.sessionName ? restored : fresh }
@@ -324,7 +324,7 @@ struct RemoteHostsTests {
             }
             defer { drivers.forEach { $0.stop() } }
             drivers.forEach { $0.start() }
-            try await Task.sleep(for: .seconds(1.5))
+            try await Task.sleep(for: .seconds(2))
             #expect(restored.remoteLinkBadge == .reconnecting)
             #expect(!restored.isRemoteLinkLost)
             #expect(fresh.remoteLinkBadge == nil)
@@ -340,6 +340,24 @@ struct RemoteHostsTests {
         }
     }
 
+    /// The app's sweep learns which pane's try failed: the default
+    /// `paneLost` posts the session only for a failed try, never for a link
+    /// that stopped (`AppState.reconnectDroppedRemotePanes(failedTry:)`).
+    @Test
+    func a_failed_try_names_its_session_and_a_stopped_link_names_none() {
+        let configuration = RemoteHosts.Configuration(key: nil, declines: .memory())
+        let objects = LockedBox<[String?]>([])
+        let observer = NotificationCenter.default.addObserver(forName: .remoteLinkDidStop, object: nil, queue: nil) { note in
+            let object = note.object as? String
+            objects.mutate { $0.append(object) }
+        }
+        defer { NotificationCenter.default.removeObserver(observer) }
+        let session = "macterm-test-\(UUID().uuidString)"
+        configuration.paneLost(session, true)
+        configuration.paneLost(session, false)
+        #expect(objects.value.filter { $0 == session || $0 == nil }.suffix(2) == [session, nil])
+    }
+
     /// The first connect of a pane that came back after a restart fails
     /// after a slow start: the badge changes from `Reconnecting` to
     /// `Connection Lost`, and the failure is a failed try, so the sweep
@@ -352,14 +370,14 @@ struct RemoteHostsTests {
             // The session ran on the host before the restart.
             pane.hostSessionDirectory = fixture.directory
             fixture.hosts.pane = { _ in pane }
-            // The login fails after 3 s.
-            try host.sshd.addToConfig("ProxyCommand /bin/sh -c 'sleep 3; exit 1'")
+            // The login fails after 4 s.
+            try host.sshd.addToConfig("ProxyCommand /bin/sh -c 'sleep 4; exit 1'")
             let driver = RemotePaneDriver(
                 name: pane.sessionName, surface: RecordingPaneHost(), hosts: fixture.hosts, slowConnectAfter: .seconds(1)
             )
             defer { driver.stop() }
             driver.start()
-            try await Task.sleep(for: .seconds(1.5))
+            try await Task.sleep(for: .seconds(2))
             #expect(pane.remoteLinkBadge == .reconnecting)
             let deadline = Date().addingTimeInterval(30)
             while pane.remoteLinkBadge != .lost, Date() < deadline {

@@ -47,11 +47,12 @@ struct RemoteReconnectPolicy {
     }
 
     /// A try of the pane failed now. The backoff counts from the end of the
-    /// try, not from its start: a host whose server does not answer holds a
-    /// try for about 20 s, longer than the first backoff steps, so the next
-    /// try would start at once and the badge would never say `Connection
-    /// Lost`. A failed connect that the sweep did not start (the pane's first
-    /// connect, a key) counts as one try.
+    /// try, not from its start. A host whose server does not answer holds a
+    /// try until the handshake gives up (15 s after the login), longer than
+    /// the first backoff step: the next try would start at once, and the
+    /// badge would never say `Connection Lost`. A failed connect that the
+    /// sweep did not start (the pane's first connect, a key) counts as one
+    /// try.
     mutating func tryFailed(_ paneID: UUID, now: Date) {
         let streak = max(states[paneID]?.streak ?? 0, 1)
         states[paneID] = PaneState(lastAttempt: now, streak: streak)

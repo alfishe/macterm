@@ -1746,6 +1746,7 @@ final class AppState {
     /// that answers again (`.hostAnswered`) clears the backoff of its panes:
     /// it is one event for each heal, so it adds no load while the host is
     /// down.
+    ///
     /// `failedTry`: the session of a pane whose try failed now. Its backoff
     /// starts at the end of the try (`RemoteReconnectPolicy.tryFailed`).
     func reconnectDroppedRemotePanes(trigger: ReconnectTrigger, destination: String? = nil, failedTry: String? = nil) {
