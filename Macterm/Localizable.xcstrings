@@ -2103,18 +2103,18 @@
         }
       }
     },
-    "Change the order in the menu of a row. The order is the same as in the sidebar." : {
+    "Change the order in the menu of a row. Each group of the sidebar has a section below." : {
       "localizations" : {
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "행의 메뉴에서 순서를 변경합니다. 순서는 사이드바와 같습니다."
+            "value" : "행 메뉴에서 순서를 변경하십시오. 사이드바의 각 그룹은 아래에 별도의 섹션이 있습니다."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "在行的菜单中更改顺序。顺序与边栏中的相同。"
+            "value" : "在行的菜单中更改顺序。侧边栏的每个分组在下方都有自己的部分。"
           }
         }
       }
@@ -11148,18 +11148,36 @@
         }
       }
     },
-    "This group contains %lld projects. Macterm removes them and stops all processes in their tabs. To keep the projects, select Ungroup." : {
+    "This group contains %lld projects. Macterm removes them and stops all processes in their tabs. To keep the projects, cancel and select Ungroup in the menu of the group." : {
       "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This group contains %lld project. Macterm removes it and stops all processes in its tabs. To keep the project, cancel and select Ungroup in the menu of the group."
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "This group contains %lld projects. Macterm removes them and stops all processes in their tabs. To keep the projects, cancel and select Ungroup in the menu of the group."
+                }
+              }
+            }
+          }
+        },
         "ko" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "이 그룹에는 프로젝트 %lld개가 있습니다. Macterm은 이 프로젝트를 제거하고 탭의 모든 프로세스를 종료합니다. 프로젝트를 유지하려면 그룹 해제를 선택하십시오."
+            "value" : "이 그룹에는 프로젝트 %lld개가 있습니다. Macterm은 이 프로젝트를 제거하고 탭의 모든 프로세스를 종료합니다. 프로젝트를 유지하려면 취소하고 그룹 메뉴에서 그룹 해제를 선택하십시오."
           }
         },
         "zh-Hans" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "此分组包含 %lld 个项目。Macterm 会移除这些项目，并结束其标签页中的所有进程。要保留这些项目，请选择“取消分组”。"
+            "value" : "此分组包含 %lld 个项目。Macterm 会移除这些项目，并结束其标签页中的所有进程。要保留这些项目，请取消，然后在分组菜单中选择“取消分组”。"
           }
         }
       }

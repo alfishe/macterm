@@ -165,7 +165,7 @@ struct ProjectStoreTests {
         store.add(b)
         store.add(c)
         // Move the last (c) to the front.
-        store.reorder(fromOffsets: IndexSet(integer: 2), toOffset: 0)
+        store.reorder(parent: nil, ids: [c.id, a.id, b.id])
         #expect(store.projects.map(\.name) == ["c", "a", "b"])
         #expect(store.projects.map(\.sortOrder) == [0, 1, 2])
     }
@@ -413,21 +413,6 @@ struct ProjectStoreTests {
     }
 
     @Test
-    func reorder_by_offsets_keeps_projects_in_their_groups() {
-        let store = makeStore()
-        let a = store.add(Project(name: "a", path: "/tmp/a"))
-        let group = store.add(.group(name: "group"))
-        let b = store.add(Project(name: "b", path: "/tmp/b", parent: group.id))
-        let c = store.add(Project(name: "c", path: "/tmp/c"))
-        // projects: a, b, c. Move c to the front: the group keeps its place
-        // and b stays in it.
-        store.reorder(fromOffsets: IndexSet(integer: 2), toOffset: 0)
-        #expect(store.children(of: nil).map(\.id) == [c.id, group.id, a.id])
-        #expect(store.children(of: group.id).map(\.id) == [b.id])
-        #expect(store.projects.map(\.id) == [c.id, b.id, a.id])
-    }
-
-    @Test
     func removing_a_group_moves_its_rows_to_the_end_of_the_top_level() {
         let store = makeStore()
         let group = store.add(.group(name: "group"))
@@ -447,19 +432,6 @@ struct ProjectStoreTests {
         let b = store.add(Project(name: "b", path: "/tmp/b"))
         #expect(store.move(a.id, into: nil))
         #expect(store.children(of: nil).map(\.id) == [a.id, b.id])
-    }
-
-    @Test
-    func reorder_by_offsets_across_a_group_does_not_move_a_project() {
-        let store = makeStore()
-        let a = store.add(Project(name: "a", path: "/tmp/a"))
-        let group = store.add(.group(name: "group"))
-        let b = store.add(Project(name: "b", path: "/tmp/b", parent: group.id))
-        let c = store.add(Project(name: "c", path: "/tmp/c"))
-        // projects: a, b, c. Moving c above b changes no parent's order.
-        store.reorder(fromOffsets: IndexSet(integer: 2), toOffset: 1)
-        #expect(store.projects.map(\.id) == [a.id, b.id, c.id])
-        #expect(store.children(of: group.id).map(\.id) == [b.id])
     }
 
     @Test

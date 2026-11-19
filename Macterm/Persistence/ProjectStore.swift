@@ -307,26 +307,6 @@ final class ProjectStore {
         changed()
     }
 
-    /// Move projects by their offsets in `projects`. A project stays in its
-    /// parent, and a group does not move. In each parent, the projects get
-    /// the order of the move. A move across a group boundary therefore does
-    /// nothing: use `reorder(parent:ids:)` for a tree.
-    func reorder(fromOffsets source: IndexSet, toOffset destination: Int) {
-        var moved = projects
-        moved.move(fromOffsets: source, toOffset: destination)
-        let rank = Dictionary(uniqueKeysWithValues: moved.enumerated().map { ($0.element.id, $0.offset) })
-        for parent in Set(rows.map(\.parent)) {
-            var siblings = children(of: parent)
-            let places = siblings.indices.filter { !siblings[$0].isGroup }
-            let leaves = places.map { siblings[$0] }.sorted { rank[$0.id, default: 0] < rank[$1.id, default: 0] }
-            for (place, leaf) in zip(places, leaves) {
-                siblings[place] = leaf
-            }
-            setOrder(parent: parent, ids: siblings.map(\.id))
-        }
-        changed()
-    }
-
     /// After each change: normalize the rows, derive `projects`, save.
     private func changed() {
         normalize()

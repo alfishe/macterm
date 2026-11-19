@@ -373,10 +373,11 @@ struct SidebarContent: View {
             // or padding, a title click, or `syncSelection` after a tab switch.
             // Watching the selection rather than writing the anchor at each
             // click site is what keeps ours and AppKit's the same row.
-            // A group row is never selected (design 013). The List can still
-            // select it on a click that `selectionDisabled` does not cover.
+            // A group row is never selected (design 013). If the List puts
+            // one in the selection all the same, the selection goes back to
+            // the active row.
             if items.contains(where: \.isGroup) {
-                presentation.selection = items.filter { !$0.isGroup }
+                syncSelection()
                 return
             }
             if items.count == 1 { presentation.selectionAnchor = items.first }
@@ -866,7 +867,12 @@ struct SidebarContent: View {
         Divider()
         treeMoveItems(group)
         Divider()
-        Button("Ungroup") { projectStore.ungroup(group.id) }
+        Button("Ungroup") {
+            projectStore.ungroup(group.id)
+            for window in appState.windows {
+                window.expandedRows.remove(group.id)
+            }
+        }
         Button("Remove Group", role: .destructive) { removeGroup(group) }
     }
 
@@ -913,8 +919,10 @@ struct SidebarContent: View {
     /// Remove a group and the projects inside it, after the question of
     /// `AppState.requestRemoveGroup`.
     private func removeGroup(_ group: Project) {
-        let inside = projectStore.projects(inGroup: group.id)
-        appState.requestRemoveGroup(group, projectCount: inside.count) {
+        appState.requestRemoveGroup(group, projectCount: projectStore.projects(inGroup: group.id).count) {
+            // Read again at the confirm: a project can move while the
+            // question is up.
+            let inside = projectStore.projects(inGroup: group.id)
             let groupIDs = [group.id] + projectStore.groups
                 .filter { projectStore.ancestors(of: $0.id).contains(group.id) }
                 .map(\.id)
@@ -1485,8 +1493,11 @@ private struct SidebarGroupRow: View {
                 .onExitCommand { cancelRename() }
                 .onAppear { focused = true }
         } else {
+            // The double tap first, so that a double click renames and does
+            // not also open and close the group.
             FadingText(group.name)
-                .inlineRenameClickTarget(onSelect: { _ in toggle() }, onBeginRename: beginRename)
+                .onTapGesture(count: 2) { beginRename() }
+                .onTapGesture { toggle() }
         }
     }
 

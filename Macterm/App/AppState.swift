@@ -2243,7 +2243,7 @@ final class AppState {
             title: String(localized: "Remove the group “\(group.name)”?"),
             message: String(localized: """
             This group contains \(projectCount) projects. Macterm removes them and stops all processes \
-            in their tabs. To keep the projects, select Ungroup.
+            in their tabs. To keep the projects, cancel and select Ungroup in the menu of the group.
             """),
             confirmTitle: String(localized: "Remove"),
             host: host,

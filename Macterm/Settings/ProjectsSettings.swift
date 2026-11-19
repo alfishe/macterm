@@ -47,7 +47,7 @@ struct ProjectsSettings: View {
             }
 
             Section {
-                if topLevelProjects.isEmpty {
+                if projectStore.projects.isEmpty {
                     Text("No projects.")
                         .foregroundStyle(.secondary)
                 } else {
@@ -65,7 +65,7 @@ struct ProjectsSettings: View {
                         projectRow(project)
                     }
                 }
-                Text("Change the order in the menu of a row. The order is the same as in the sidebar.")
+                Text("Change the order in the menu of a row. Each group of the sidebar has a section below.")
                     .settingsSecondaryText()
             } header: {
                 HStack {
