@@ -131,10 +131,18 @@ struct ProjectMemoryDigest: Equatable {
     /// See `key`.
     static func key(projectName: String, entries: [MemoryEntry], git: GitStatus?) -> String {
         let records = entries.suffix(recentCommandCount).map { "\($0.id.uuidString):\($0.outcome.rawValue)" }
-        let branchCommits = git?.branchCommits.map { ["own"] + $0.map(\.hash) } ?? []
-        let changedPaths = git?.changedPaths.prefix(changedPathLimit).map(\.self) ?? []
-        return ([projectName] + records + [git.map(gitLine) ?? "", git?.recentCommits.first?.hash ?? ""] + branchCommits
-            + changedPaths + [diffHash(git?.diff)]).joined(separator: "|")
+        let branchCommits: [String] = git?.branchCommits.map { ["own"] + $0.map(\.hash) } ?? []
+        let changedPaths: [String] = git?.changedPaths.prefix(changedPathLimit).map(\.self) ?? []
+        // Fork: built in steps. The Swift 6.2 type checker of Xcode 26 times
+        // out on the single expression.
+        let gitParts: [String] = [git.map(gitLine) ?? "", git?.recentCommits.first?.hash ?? ""]
+        var parts: [String] = [projectName]
+        parts += records
+        parts += gitParts
+        parts += branchCommits
+        parts += changedPaths
+        parts.append(diffHash(git?.diff))
+        return parts.joined(separator: "|")
     }
 
     /// A hash of the diff that `GitStatusParser.parseDiff` kept, so that an

@@ -40,9 +40,13 @@ enum OnDeviceModel {
     /// prompt and the reply together. 8,192 on macOS 27, 4,096 before.
     static var contextSize: Int {
         #if canImport(FoundationModels)
+        // Fork: `contextSize` is in the macOS 27 SDK only (Xcode 27, Swift
+        // 6.3). An Xcode 26 build uses the smallest size.
+        #if compiler(>=6.3)
         if #available(macOS 26.0, *) {
             return SystemLanguageModel.default.contextSize
         }
+        #endif
         #endif
         return OutputExplanation.smallestContextSize
     }
@@ -52,7 +56,8 @@ enum OnDeviceModel {
     /// (about 0.1 s), so the count of a short text that comes again, such
     /// as the instructions, is kept for the run.
     static var tokenCounter: (@MainActor (String) async throws -> Int)? {
-        #if canImport(FoundationModels)
+        // Fork: `tokenCount(for:)` is in the macOS 27 SDK only.
+        #if canImport(FoundationModels) && compiler(>=6.3)
         if #available(macOS 26.4, *) {
             return { text in
                 if let tokens = keptCounts[text] { return tokens }
@@ -120,6 +125,8 @@ enum OnDeviceModel {
     /// `LanguageModelSession.GenerationError`, which macOS 27 deprecates.
     @available(macOS 26.0, *)
     private static func failure(for error: Error) -> Failure {
+        // Fork: `LanguageModelError` is in the macOS 27 SDK only.
+        #if compiler(>=6.3)
         if #available(macOS 27.0, *), let error = error as? LanguageModelError {
             switch error {
             case .contextSizeExceeded: return .tooLong
@@ -128,6 +135,7 @@ enum OnDeviceModel {
             default: return .other
             }
         }
+        #endif
         guard let error = error as? LanguageModelSession.GenerationError else { return .other }
         switch error {
         case .exceededContextWindowSize: return .tooLong

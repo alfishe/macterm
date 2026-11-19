@@ -404,6 +404,8 @@ struct MactermIntentsTests {
         #expect(try IntentTargets.pane(session: entity.id, in: ctx).pane === pane)
     }
 
+    // Fork: `NSView.appEntityIdentifier` is in the macOS 27 SDK only.
+    #if compiler(>=6.3)
     @Test
     func a_workspace_panes_view_names_its_pane_entity_for_siri() throws {
         guard #available(macOS 15.4, *) else { return }
@@ -433,6 +435,7 @@ struct MactermIntentsTests {
             #expect(view.appEntityIdentifier == nil)
         }
     }
+    #endif
 
     @Test
     func running_a_command_in_a_pane_with_no_surface_reports_no_surface() async throws {

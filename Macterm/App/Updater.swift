@@ -6,6 +6,11 @@ import SwiftUI
 enum UpdaterAvailability {
     static let placeholderPublicKey = "SPARKLE_ED_PUBLIC_KEY_PLACEHOLDER"
 
+    /// Fork: this build never starts Sparkle. The appcast is upstream's, and
+    /// an update from it would replace the fork with a build without the
+    /// fork's changes. Merge upstream and build again instead.
+    static let disabledInFork = true
+
     static func shouldStart(isDebug: Bool, isBenchmark: Bool, publicKey: String?) -> Bool {
         guard !isDebug, !isBenchmark, let publicKey, !publicKey.isEmpty else { return false }
         return publicKey != placeholderPublicKey
@@ -108,7 +113,7 @@ final class Updater {
             #endif
         }()
         let publicKey = Bundle.main.object(forInfoDictionaryKey: "SUPublicEDKey") as? String
-        let startUpdater = UpdaterAvailability.shouldStart(
+        let startUpdater = !UpdaterAvailability.disabledInFork && UpdaterAvailability.shouldStart(
             isDebug: isDebug,
             isBenchmark: BenchmarkControl.isEnabled,
             publicKey: publicKey

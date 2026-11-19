@@ -214,10 +214,14 @@ extension MactermPaneEntity {
     /// session, which `IntentTargets.pane` resolves to the leader.
     @MainActor
     static func annotate(_ view: NSView, for pane: Pane) {
+        // Fork: `NSView.appEntityIdentifier` is in the macOS 27 SDK only. An
+        // Xcode 26 build leaves the view untagged.
+        #if compiler(>=6.3)
         guard #available(macOS 15.4, *) else { return }
         view.appEntityIdentifier = IntentTargets.isAddressablePane(projectID: pane.projectID)
             ? identifier(forSession: pane.sessionName)
             : nil
+        #endif
     }
 }
 

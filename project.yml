@@ -83,12 +83,12 @@ targets:
       - path: Macterm/Resources/terminfo
         type: folder
         buildPhase: resources
-      # Icon Composer file. Xcode 26 prefers this over an Assets.xcassets
-      # AppIcon.appiconset when ASSETCATALOG_COMPILER_APPICON_NAME matches the
-      # filename — actool generates .icns + alternate appearances (light, dark,
-      # tinted, clear) automatically from the layered .icon source.
-      - path: Macterm/AppIcon.icon
-        type: file
+      # Fork: the Icon Composer source (Macterm/AppIcon.icon) uses Icon
+      # Composer 27 features, and the asset compiler of Xcode 26 cannot build
+      # it. The fork builds on Xcode 26, so the app icon comes from
+      # Assets.xcassets/AppIcon.appiconset (a flat render of the same icon).
+      # On Xcode 27, put `- path: Macterm/AppIcon.icon` / `type: file` back
+      # here to get the layered icon again.
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.thdxg.macterm

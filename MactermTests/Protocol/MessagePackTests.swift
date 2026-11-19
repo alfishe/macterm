@@ -70,7 +70,13 @@ struct MessagePackTests {
         #expect(Self.encode(ProtocolSecret(bytes)).prefix(5) == [0xC6, 0, 1, 0, 0])
         #expect(Self.encode([UInt16(1), 2]) == [0x92, 1, 2])
         #expect(Self.encode([UInt16](repeating: 1, count: 16)).prefix(3) == [0xDC, 0, 16])
-        let sample: [UInt8] = [0x82, 0xA4] + Array("name".utf8) + [0xA1, 0x61, 0xA4] + Array("tags".utf8) + [0x90]
+        // Fork: built in steps. The Swift 6.2 type checker of Xcode 26 times
+        // out on the single expression.
+        var sample: [UInt8] = [0x82, 0xA4]
+        sample += Array("name".utf8)
+        sample += [0xA1, 0x61, 0xA4]
+        sample += Array("tags".utf8)
+        sample += [0x90]
         #expect(Self.encode(Sample(name: "a", tags: [])) == sample)
     }
 
